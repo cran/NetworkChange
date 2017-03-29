@@ -1,0 +1,19 @@
+import(ggplot2)
+importFrom(Rmpfr, mpfr)
+import(abind)
+import(mvtnorm)
+import(grid)
+importFrom(LaplacesDemon, dwishartc, is.positive.semidefinite)
+import(grDevices)
+import(graphics)
+import(MCMCpack)
+import(stats)
+import(MASS)
+import(RColorBrewer)
+import(methods)
+
+export(NetworkChange, NetworkStatic, MakeBlockNetworkChange,
+       startS, updateS, updateP, multiplot, plotU, plotV, plotContour, 
+       startUV, updateb, updateU, updateV,
+       updateUm, updateVm, updates2m, updatebm, WaicCompare, MarginalCompare)
+
