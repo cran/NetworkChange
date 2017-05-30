@@ -5,7 +5,6 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
                           degree.normal="eigen", 
                           UL.Normal = "Orthonormal",
                           DIC = FALSE, Waic=FALSE, marginal = FALSE, 
-                          random.perturb = TRUE, 
                           plotUU = FALSE, plotZ = FALSE,
                           b0 = 0, B0 = 1, c0 = NULL, d0 = NULL,
                           u0 = NULL, u1 = NULL, v0 = NULL, v1 = NULL,
@@ -23,6 +22,7 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     sequential = FALSE
     local.type = "NULL" ## c("NULL", "linear.trend", "logistic"),
     logistic.tune = 0.5
+    random.perturb = TRUE
     
     totiter <- mcmc + burnin
     nstore <- mcmc/thin    
@@ -194,7 +194,9 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     ## MCMC loop starts!
 #############################################################
     for(iter in 1:totiter) {
-
+        if(iter > burnin){
+            random.perturb = FALSE
+        }
         ## Zb = Z - bhat
         ## Zm is regime specific Zb
         ## ZY = Z
@@ -302,8 +304,8 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
  
         ## double check 
         if(length(table(s)) < ns){
-            print(table(s))
-            cat("Sampled s does not have all states. \n")
+            ## print(table(s))
+            ## cat("Sampled s does not have all states. \n")
             s <- sort(sample(1:ns, size=K[3], replace=TRUE, prob=(rep(1, ns))))
         }
     
@@ -319,7 +321,7 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         if (verbose!= 0 &iter %% verbose == 0){
             cat("\n----------------------------------------------",'\n')
             cat("    iteration = ", iter, '\n')
-            cat("    SOS = ", SOS, '\n')
+            ## cat("    SOS = ", SOS, '\n')
             cat("    beta = ", bhat,'\n')
             if(plotZ == TRUE & plotUU == TRUE){
                 if(ns < 4){
@@ -515,7 +517,7 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     
     ## cat("    loglike: ", as.numeric(loglike), "\n")
     cat("    loglike: ", as.numeric(loglike.upper), "\n")
-    cat("    total SOS = ", SOS, '\n')
+    ## cat("    total SOS = ", SOS, '\n')
  
     
 ##########################################################################
@@ -638,9 +640,12 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         }
         density.eU <- log(mean(exp(density.eU.holder)))
         if(abs(density.eU) == Inf){
-            cat("    Precision reinforced! \n")
-            print(density.eU.holder)
+            ## cat("    Precision reinforced! \n")
+            ## print(density.eU.holder)
             density.eU <- as.numeric(log(mean(exp(mpfr(density.eU.holder, precBits=53)))))
+        }
+        if(abs(density.eU) == Inf){
+            stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
         }
         
         cat("\n---------------------------------------------- \n ")
@@ -741,9 +746,12 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         
         density.iVU <- log(mean(exp(density.iVU.holder)))
         if(abs(density.iVU) == Inf){
-            cat("    Precision reinforced! \n")
-            print(density.iVU.holder)
+            ## cat("    Precision reinforced! \n")
+            ## print(density.iVU.holder)
             density.iVU <- as.numeric(log(mean(exp(mpfr(density.iVU.holder, precBits=53)))))
+        }
+        if(abs(density.iVU) == Inf){
+            stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
         }
 
         cat("\n---------------------------------------------- \n ")
@@ -821,8 +829,8 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             
             ## double check 
             if(length(table(s)) < ns){
-                print(table(s))
-                cat("Sampled s does not have all states. \n")
+                ## print(table(s))
+                ## cat("Sampled s does not have all states. \n")
                 s <- sort(sample(1:ns, size=K[3], replace=TRUE, prob=(rep(1, ns))))
             }
             ## Step 6. update P
@@ -831,10 +839,14 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         
         density.eV <- log(mean(exp(density.eV.holder)))
         if(abs(density.eV) == Inf){
-            cat("    Precision reinforced! \n")
-            print(density.eV.holder)
+            ## cat("    Precision reinforced! \n")
+            ## print(density.eV.holder)
             density.eV <- as.numeric(log(mean(exp(mpfr(density.eV.holder, precBits=53)))))
         }
+        if(abs(density.eV) == Inf){
+            stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
+        }
+
         
         cat("\n---------------------------------------------- \n ")
         cat("Marignal Likelihood Computation Step 3 \n")
@@ -917,8 +929,8 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             
             ## double check 
             if(length(table(s)) < ns){
-                print(table(s))
-                cat("Sampled s does not have all states. \n")
+                ## print(table(s))
+                ## cat("Sampled s does not have all states. \n")
                 s <- sort(sample(1:ns, size=K[3], replace=TRUE, prob=(rep(1, ns))))
             }
             ## Step 6. update P
@@ -927,10 +939,14 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         
         density.iVV <- log(mean(exp(density.iVV.holder)))
         if(abs(density.iVV) == Inf){
-            cat("    Precision reinforced! \n")
-            print(density.iVV.holder)
+            ## cat("    Precision reinforced! \n")
+            ## print(density.iVV.holder)
             density.iVV <- as.numeric(log(mean(exp(mpfr(density.iVV.holder, precBits=53)))))
         }
+        if(abs(density.iVV) == Inf){
+            stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
+        }
+
 
         cat("\n---------------------------------------------- \n ")
         cat("Marignal Likelihood Computation Step 4 \n")
@@ -994,8 +1010,8 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             
             ## double check 
             if(length(table(s)) < ns){
-                print(table(s))
-                cat("Sampled s does not have all states. \n")
+                ## print(table(s))
+                ## cat("Sampled s does not have all states. \n")
                 s <- sort(sample(1:ns, size=K[3], replace=TRUE, prob=(rep(1, ns))))
             }
             ## Step 6. update P
@@ -1004,10 +1020,14 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         
         density.bhat <- log(mean(exp(density.bhat.holder)))
         if(abs(density.bhat) == Inf){
-            cat("    Precision reinforced! \n")
-            print(density.bhat.holder)
+            ## cat("    Precision reinforced! \n")
+            ## print(density.bhat.holder)
             density.bhat <- as.numeric(log(mean(exp(mpfr(density.bhat.holder, precBits=53)))))
         }
+        if(abs(density.bhat) == Inf){
+            stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
+        }
+
         
         cat("\n---------------------------------------------- \n ")
         cat("Marignal Likelihood Computation Step 5 \n")
@@ -1077,8 +1097,8 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             
             ## double check 
             if(length(table(s)) < ns){
-                print(table(s))
-                cat("Sampled s does not have all states. \n")
+                ## print(table(s))
+                ## cat("Sampled s does not have all states. \n")
                 s <- sort(sample(1:ns, size=K[3], replace=TRUE, prob=(rep(1, ns))))
             }
             ## Step 6. update P
@@ -1087,11 +1107,14 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         
         density.Sigma <- log(mean(exp(density.Sigma.holder)))
         if(abs(density.Sigma) == Inf){
-            cat("    Precision reinforced! \n")
-            print(density.Sigma.holder)
+            ## cat("    Precision reinforced! \n")
+            ## print(density.Sigma.holder)
             density.Sigma <- as.numeric(log(mean(exp(mpfr(density.Sigma.holder, precBits=53)))))
         }
- 
+        if(abs(density.Sigma) == Inf){
+            stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
+        }
+        
         cat("\n---------------------------------------------- \n ")
         cat("Marignal Likelihood Computation Step 6 \n")
         cat("    density.Sigma: ", as.numeric(density.Sigma), "\n")
@@ -1150,8 +1173,8 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             
             ## double check 
             if(length(table(s)) < ns){
-                print(table(s))
-                cat("Sampled s does not have all states. \n")
+                ## print(table(s))
+                ## cat("Sampled s does not have all states. \n")
                 s <- sort(sample(1:ns, size=K[3], replace=TRUE, prob=(rep(1, ns))))
             }
             ## Step 6. update P
@@ -1173,11 +1196,14 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         
         density.P <- log(mean(exp(density.P.holder)))
         if(abs(density.P) == Inf){
-            cat("    Precision reinforced! \n")
-            print(density.P.holder)
+            ## cat("    Precision reinforced! \n")
+            ## print(density.P.holder)
             density.P <- as.numeric(log(mean(exp(mpfr(density.P.holder, precBits=53)))))
         }
- 
+         if(abs(density.P) == Inf){
+            stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
+        }
+
         cat("\n---------------------------------------------- \n ")
         cat("Marignal Likelihood Computation Step 7 \n")
         cat("    density.P: ", as.numeric(density.P), "\n")
@@ -1245,6 +1271,7 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     attr(output, "R") <- R
     attr(output, "U") <- U
     attr(output, "V") <- V
+    attr(output, "SOS") <- SOS
     attr(output, "Umat") <- Umat
     attr(output, "Vmat") <- Vmat
     attr(output, "bmat") <- bhat.mat

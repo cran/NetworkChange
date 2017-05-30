@@ -12,7 +12,7 @@ NetworkChange(Y, R=2, m=1, initial.s = NULL,
               mcmc=100, burnin=100, verbose=0, thin  = 1,                         
               degree.normal="eigen", UL.Normal = "Orthonormal",
               DIC = FALSE, Waic=FALSE, marginal = FALSE, 
-              random.perturb = TRUE, plotUU = FALSE, plotZ = FALSE,
+              plotUU = FALSE, plotZ = FALSE,
               b0 = 0, B0 = 1, c0 = NULL, d0 = NULL,
               u0 = NULL, u1 = NULL, v0 = NULL, v1 = NULL,
               a = NULL, b = NULL)
@@ -53,11 +53,6 @@ NetworkChange(Y, R=2, m=1, initial.s = NULL,
 	Transformation of sampled U. Users can choose "NULL", "Normal" or "Orthonormal." 
 	"NULL" is no normalization. "Normal" is the standard normalization. "Orthonormal" is the Gram-Schmidt orthgonalization.
 	Default is "NULL." 
-    }
-
-    \item{random.perturb}{
-	If \code{random.perturb} = TRUE and a single state observation is found, the latent state
-	is randomly selected by equal weights. 
     }
     \item{plotUU}{If \code{plotUU = TRUE} and \code{verbose > 0}, then the plot of the latent space will be
                   printed to the screen at every \code{verbose}th iteration. The default is \code{plotUU = FALSE}.}
@@ -140,7 +135,7 @@ Y <- MakeBlockNetworkChange(n=10, T=40, type ="split")
 G <- 100 ## only 100 mcmc scans to save time
 
 ## Fit models
-out0 <- NetworkStatic(Y, R=2, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
+out0 <- NetworkStatic(Y, R=2, mcmc=G, burnin=G, verbose=G, random.perturb = FALSE, Waic=TRUE)
 out1 <- NetworkChange(Y, R=2, m=1, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
 out2 <- NetworkChange(Y, R=2, m=2, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
 out3 <- NetworkChange(Y, R=2, m=3, mcmc=G, burnin=G, verbose=G, Waic=TRUE)

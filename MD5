@@ -1,7 +1,7 @@
-496de1d02f75bcbd0b8dd9fdf0f52ef7 *DESCRIPTION
+bb7d0fa623c82e5aa60ba71b0330d940 *DESCRIPTION
 1454bd30667b21d22b5237fdf3dc17fa *NAMESPACE
 0c048ff60a6bf1bb187716f20f835437 *R/MakeBlockNetworkChange.R
-d2843eaed2fe26c61488e0a85dadf519 *R/NetworkChange.r
+b52afe7aa47160ea4ec5c8329f5413b5 *R/NetworkChange.r
 4c0e09b97857db3c870826e043b20441 *R/NetworkStatic.R
 5eb113b9c03ac76af538563ee489d65f *R/ULUstateSample.r
 5aabe1c574bb1f9bb72927edd5ffa218 *R/Utils.R
@@ -22,7 +22,7 @@ c6eaa1f2755caad9cfe61f0c56e73c13 *R/updateb.R
 e96f3fb75d8de504b3d3d602a774e64b *R/updates2m.R
 37aca74c8abe7765346c6f81d31171f1 *man/MakeBlockNetworkChange.Rd
 56e0d18ec4997048ab0558ca1c9694ed *man/MarginalCompare.Rd
-14b7be5a37b7578d038fa897b987b393 *man/NetworkChange.Rd
+4d5253b8b473cc95e494b425811b9c43 *man/NetworkChange.Rd
 4c910d9ff7a0076cd9b8e0b90de933dc *man/NetworkStatic.Rd
 7c0e3678e3f6598bb1e971c3fc3111f9 *man/WaicCompare.Rd
 aada4e0aac08a22315f5e9d281f1a8d4 *man/multiplot.Rd
