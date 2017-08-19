@@ -1,5 +1,22 @@
-updateV <-
-function(Zb, U, R, K, s2, eV, iVV, UTA){
+#' Update layer specific network generation rules
+#'
+#' Update layer specific network generation rules
+#'
+#' 
+#' @param Zb Z - beta.
+#' @param U The latent node positions.
+#' @param R The dimension of latent space.
+#' @param K The dimension of Z.
+#' @param s2 The variance of error.
+#' @param eV The mean of V.
+#' @param iVV The variance of V.
+#' @param UTA Indicator of upper triangular array 
+#'
+#' @return A matrix of layer specific network generation rules
+#'
+#' @export
+#'
+updateV <- function(Zb, U, R, K, s2, eV, iVV, UTA){
     Zb0 <- Zb
     Zb0[!UTA] <- 0
     if(R == 1){

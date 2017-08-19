@@ -1,5 +1,26 @@
-updateVm <-
-function(ns, U, V, Zm, Km, R, s2, eV, iVV, UTA){
+#' Update V from a change-point network process
+#'
+#' Update layer specific network generation rules from a change-point network process
+#'
+#' 
+#' @param ns The number of hidden regimes.
+#' @param U The latent node positions.
+#' @param V The layer-specific network generation rule.
+#' @param Zm The holder of Z - beta.
+#' @param Km The dimension of regime-specific Z.
+#' @param R The dimension of latent space.
+#' @param s2 The variance of error.
+#' @param eV The mean of V
+#' @param iVV The variance of V
+#' @param UTA Indicator of upper triangular array 
+
+#'
+#' @return A matrix of regime-specific layer specific network generation rules
+#'
+#' @export
+#'
+#' 
+updateVm <- function(ns, U, V, Zm, Km, R, s2, eV, iVV, UTA){
     Vm <- as.list(rep(NA, ns))
     for(j in 1:ns){
         Uj <- U[[j]]

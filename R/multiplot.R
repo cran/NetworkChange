@@ -1,5 +1,20 @@
-multiplot <-
-function (..., plotlist = NULL, cols = 1, layout = NULL) 
+#' Printing multiple ggplots in oone file
+#' 
+#' Print multiple ggplots in one file. Slightly modified for packaging from the original version in the web. 
+#'
+#' @param ...  A list of ggplot objects separated by commas.
+#' @param plotlist A list of ggplot objects
+#' @param cols The number of columns.
+#' @param layout A matrix specifying the layout. If present, 'cols' is ignored.
+#'
+#' @author \url{http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/}
+#' 
+#' @return A plot object
+#'
+#' @export
+#'
+#'
+multiplot <- function (..., plotlist = NULL, cols = 1, layout = NULL) 
 {
     plots <- c(list(...), plotlist)
     numPlots = length(plots)

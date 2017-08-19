@@ -3,45 +3,6 @@
 #################################################
 
 
-## set.seed(1973)
-## Generate an array (30 by 30 by 40) with block transitions from 2 blocks to 3 blocks
-## Y <- MakeBlockNetworkChange(n=10, T=40, type ="split")
-## G <- 100 ## only 100 mcmc scans to save time
-##  out0 <- NetworkStatic(Y, R=2, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
-##  out1 <- NetworkChange(Y, R=2, m=1, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
-##  out2 <- NetworkChange(Y, R=2, m=2, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
-##  out3 <- NetworkChange(Y, R=2, m=3, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
-## outlist <- list(out0, out1, out2, out3)
-## WaicCompare(outlist)
-WaicCompare <- function(outlist){
-    N.model <- length(outlist)
-    breaks <- lapply(outlist, attr, "m")
-    outl <- lapply(outlist, attr, "Waic.out")
-    outm <- matrix(unlist(outl), N.model, 8, byrow=TRUE)
-    out <- matrix(outm[,1], 1, N.model)
-    colnames(out) <- paste0("break ", breaks) 
-    return(out)
-}    
-## set.seed(1973)
-## Generate an array (30 by 30 by 40) with block transitions from 2 blocks to 3 blocks
-## Y <- MakeBlockNetworkChange(n=10, T=40, type ="split")
-## G <- 100 ## only 100 mcmc scans to save time
-##  out0 <- NetworkStatic(Y, R=2, mcmc=G, burnin=G, verbose=G, marginal =TRUE)
-##  out1 <- NetworkChange(Y, R=2, m=1, mcmc=G, burnin=G, verbose=G, marginal =TRUE)
-##  out2 <- NetworkChange(Y, R=2, m=2, mcmc=G, burnin=G, verbose=G, marginal =TRUE)
-##  out3 <- NetworkChange(Y, R=2, m=3, mcmc=G, burnin=G, verbose=G, marginal =TRUE)
-## outlist <- list(out0, out1, out2, out3)
-## WaicCompare(outlist)
-MarginalCompare <- function(outlist){
-    N.model <- length(outlist)
-    marg <- lapply(outlist, attr, "logmarglike")
-    breaks <- lapply(outlist, attr, "m")
-    outm <- matrix(marg, 1, N.model)
-    colnames(outm) <- paste0("break ", breaks) 
-    return(outm)
-}    
-
-
 ## Gram-Schmidt orthogonalization
 GramSchmidt <- function(U){
     R <- dim(U)[2]
@@ -233,69 +194,6 @@ addTrans <- function(color,trans){
 }
 
 
-## draw latent node positions
-plotU <- function(mcmcout, Year=NULL, names=NULL, main="",...){
-    m <- attr(mcmcout, "m")
-    mcmc <- attr(mcmcout, "mcmc")
-    Z <- attr(mcmcout, "Z")
-    K <- dim(Z)
-    R <- attr(mcmcout, "R")
-    if(is.null(Year)){
-        y <- Year <- ts(1:K[3])
-    } else{
-        y <- ts(Year)
-    }
-    if(is.null(names)){
-        names <- 1:K[1]
-    } 
-    ns <- m + 1
-    First <- Second <- Size <- Names <- NA
-    if(m == 0){
-        x <- mcmcout
-        x.mean <-  apply(x, 1:2, mean)
-        tmp <- eigen(x.mean)
-        U <- tmp$vec[, order(-abs(tmp$val))[seq(1, R, length = R)], 
-                     drop = FALSE] * sqrt(K[1])
-        df <- data.frame(First = U[,1], Second = U[,2],
-                         Size = sqrt((U[,1])^2 + (U[,2])^2),
-                         Names = names)
-        title <- paste0("Latent Space of No Break Model")
-        ggplot(df, aes(x=First, y = Second, label=Names)) + geom_point(size = df$Size+1, colour = alpha("red", 1/5)) +
-            ggtitle(title) + geom_text(size = df$Size, colour = "navy") + 
-                theme(plot.title = element_text(lineheight=.8, face="bold"))
-    }
-    else{      
-        ## plot
-        U.list <- df.list <- p.list <- title.list <- time.period <- as.list(rep(NA, ns))
-        median.s <- apply(attr(mcmcout, "Smat"), 2, median)
-        
-        for(i in 1:ns){
-            time.period[[i]] <- paste0(range(Year[median.s == i])[1], "-", range(Year[median.s == i])[2])
-            x <- mcmcout[[i]][,,median.s == i]
-            x.mean <-  apply(x, 1:2, mean)
-            tmp <- eigen(x.mean)
-            U.list[[i]] <- tmp$vec[, order(-abs(tmp$val))[seq(1, R, length = R)], 
-                                   drop = FALSE] * sqrt(K[1])
-            ## U.list[[i]] <- matrix(apply(out[[i]], 2, mean), dim(Y)[1], R)
-            df.list[[i]] <- data.frame(First = U.list[[i]][,1], Second = U.list[[i]][,2],
-                                       Size = sqrt((U.list[[i]][,1])^2 + (U.list[[i]][,2])^2),
-                                       Names = names)
-            title.list[[i]] <- paste0("Latent Space of Break ", i, " (", time.period[[i]], ")")
-            p.list[[i]] <- ggplot(df.list[[i]], aes(x=First, y = Second, label=Names)) +
-                geom_point(size = df.list[[i]]$Size+1, colour = alpha("red", 1/5)) +
-                    ggtitle(title.list[[i]]) +
-                        ## geom_text(colour = "navy", aes(label = Names)) + 
-                        geom_text(size = df.list[[i]]$Size, colour = "navy", aes(label = Names)) + 
-                            theme(plot.title = element_text(lineheight=.8, face="bold"))
-        }
-        if(ns < 5){
-             multiplot(plotlist = p.list, cols=ns)
-        }
-        else{
-            multiplot(plotlist = p.list, cols=ceiling(ns/2))
-        }
-    }
-}
 
 ## from http://stackoverflow.com/questions/3932038/plot-a-legend-outside-of-the-plotting-area-in-base-graphics
 add_legend <- function(...) {
@@ -306,30 +204,6 @@ add_legend <- function(...) {
   legend(...)
 }
 
-plotV <- function (OUT, main = "", cex = 2) 
-{
-  Vmat <- attr(OUT, "Vmat")
-  Y <- attr(OUT, "Z")
-  T <- dim(Vmat)[2]/2
-  my.cols = rainbow(T)
-  Vmat1 <- Vmat[, 1:T]
-  Vmat2 <- Vmat[, (T + 1):(2 * T)]
-  V1 <- apply(Vmat1, 2, mean)
-  V2 <- apply(Vmat2, 2, mean)
-  par(mar = c(5, 4, 2.4, 2.2))
-  plot(1:T, V1, type = "n", main = "", ylim=range(c(V1, V2)), 
-       ylab = expression(V), xlab = "Time", xaxt = "n", yaxt = "n")
-  axis(1); axis(2); grid( col="grey40")
-  abline(h=0, lty=3)
-  lines(1:T, V1, lwd=2, col = addTrans("red",100))
-  lines(1:T, V2, lwd=2, col = addTrans("blue",100))
-  points(1:T, V1, cex = cex, pch=19, col = addTrans("red",150))
-  points(1:T, V2, cex = cex, pch=21, col = addTrans("blue",150))
-  add_legend("top", legend=c("1st", "2nd"), pch = c(19, 21), 
-             lwd=1, lty=c(1, 1), bty="n",
-             col = c(addTrans("red",100), addTrans("blue",100)),
-             horiz=TRUE, cex=1)
-}
 
 ## code by Gelman and Vehtari (2014)
 colVars <- function(a) {

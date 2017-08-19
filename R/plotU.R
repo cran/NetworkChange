@@ -1,5 +1,29 @@
-plotU <-
-function(OUT, Year=NULL, names=NULL, main=""){
+#' Plot of latent node positions
+#'
+#' Plot latent node positions.
+#' 
+#' @param OUT Output of networkchange objects.
+#' @param Year Starting of the time period. If NULL, 1.
+#' @param main The title of plot
+#' @param names Node names. If NULL, use natural numbers.
+#'
+#' @return A plot object
+#' 
+#' @export
+#'
+#' @examples
+#'
+#'    \dontrun{set.seed(1973)
+#'    ## generate an array with two constant blocks
+#'    Y <- MakeBlockNetworkChange(n=10, shape=10, T=40, type ="constant")
+#'    out0 <- NetworkStatic(Y, R=2, mcmc=10, burnin=10,
+#'    verbose=10, UL.Normal = "Orthonormal")
+#'    ## latent node positions
+#'    plotU(out0)
+#'    }
+
+
+plotU <- function(OUT, Year=NULL, names=NULL, main=""){
     m <- attr(OUT, "m")
     mcmc <- attr(OUT, "mcmc")
     Z <- attr(OUT, "Z")

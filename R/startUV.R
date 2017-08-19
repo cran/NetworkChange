@@ -1,5 +1,16 @@
-startUV <-
-function(Z, R, K){
+#' Starting values of U and V
+#'
+#' Initialize starting values of U and V
+#'
+#' @param Z Degree-corrected network array data.
+#' @param R The dimensionality of latent space.
+#' @param K The dimensionality of Z.
+#'
+#' @return A list of U and V
+#'
+#' @export
+#'
+startUV <- function(Z, R, K){
     eig.temp <- eigen(apply(Z,c(1,2),mean))
     d2m <- abs(eig.temp$val)
     U0 <- eig.temp$vec[, order(d2m,decreasing=TRUE) ]

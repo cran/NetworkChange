@@ -1,5 +1,21 @@
-startS <-
-function(Z, Time, m, initial.U, V, s2, R){
+#' Sample a starting value of hidden states
+#'
+#' Sample a starting value of hidden states
+#'
+#'
+#' @param Z Degree-corrected network array data
+#' @param Time The length of time. 
+#' @param m The number of breaks
+#' @param initial.U Initialized U matrix.
+#' @param V Initialized V matrix.
+#' @param s2 Initialized error variance
+#' @param R The dimensionality of latent space
+#'
+#' @return A state vector
+#'
+#' @export
+
+startS <- function(Z, Time, m, initial.U, V, s2, R){
     ns <- m + 1
     K <- dim(Z)
     U.pilot <- matrix(rnorm(K[1]*R), K[1], R)      

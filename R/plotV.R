@@ -1,5 +1,28 @@
-plotV <-
-function (OUT, main = "", cex = 2) 
+#' Plot of layer-specific network generation rules.
+#'
+#' Plot layer-specific network generation rules.
+#' 
+#' @param OUT Output of networkchange objects.
+#' @param main The title of plot
+#' @param cex point size
+#' @return A plot object
+#' 
+#' @export
+#'
+#' @examples
+#'
+#'    \dontrun{set.seed(1973)
+#'    ## generate an array with two constant blocks
+#'    Y <- MakeBlockNetworkChange(n=10, shape=10, T=40, type ="constant")
+#'    out0 <- NetworkStatic(Y, R=2, mcmc=10, burnin=10,
+#'    verbose=10, UL.Normal = "Orthonormal")
+#'    ## latent node positions
+#'    plotV(out0)
+#'    }
+
+
+
+plotV <- function (OUT, main = "", cex = 2) 
 {
   Vmat <- attr(OUT, "Vmat")
   Y <- attr(OUT, "Z")

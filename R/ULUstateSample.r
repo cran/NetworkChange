@@ -1,3 +1,22 @@
+#' Hidden State Sampler
+#'
+#' 
+#' Sample hidden states from hidden Markov multilinear model
+#'
+#'
+#' 
+#' @param m The number of break
+#' @param s Latent state vector 
+#' @param ZMUt Z - MU
+#' @param s2 error variance
+#' @param P Transition matrix
+#' @param SOS.random single observation state random perturbation
+#' 
+#' @return A list of a state vector, state probabilities, and SOS.random. 
+#'
+#' @export
+#'
+
 ULUstateSample <- function(m, s, ZMUt, s2, P, SOS.random){
     T <- dim(ZMUt[[1]])[1]
     ns <- m+1

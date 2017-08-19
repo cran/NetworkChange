@@ -1,6 +1,111 @@
-###########################################################
-## A degree-corrected multilinear tensor regression model
-###########################################################
+#' Degree-corrected multilinear tensor model
+#'
+#' NetworkStatic implements a degree-corrected Bayesian multilinear tensor decomposition method
+
+#' @param Y Reponse tensor 
+#' @param R Dimension of latent space. The default is 2. 
+#'
+#' @param burnin The number of burn-in iterations for the sampler.
+#'
+#' @param mcmc The number of MCMC iterations after burnin.
+#'
+#' @param thin The thinning interval used in the simulation.  The number of
+#' MCMC iterations must be divisible by this value.
+#'
+#' @param verbose A switch which determines whether or not the progress of the
+#' sampler is printed to the screen.  If \code{verbose} is greater than 0 the
+#' iteration number, the \eqn{\beta} vector, and the error variance are
+#' printed to the screen every \code{verbose}th iteration.
+#'
+#' @param degree.normal	A null model for degree correction. Users can choose "NULL", "eigen" or "Lsym."
+#' "NULL" is no degree correction. "eigen" is a principal eigen-matrix consisting of
+#' the first eigenvalue and the corresponding eigenvector. "
+#' Lsym" is a modularity matrix. Default is "eigen."
+#'
+#' @param UL.Normal Transformation of sampled U. Users can choose "NULL", "Normal" or "Orthonormal."
+#' "NULL" is no normalization. "Normal" is the standard normalization.
+#' "Orthonormal" is the Gram-Schmidt orthgonalization. Default is "NULL."
+#'
+#' @param plotUU If \code{plotUU = TRUE} and \code{verbose > 0},
+#' then the plot of the latent space will be
+#' printed to the screen at every \code{verbose}th iteration.
+#' The default is \code{plotUU = FALSE}.
+#'
+#' @param plotZ If \code{plotZ = TRUE} and \code{verbose > 0},
+#' then the plot of the degree-corrected input matrix will be
+#' printed to the screen with the sampled mean values at every \code{verbose}th iteration.
+#' The default is \code{plotUU = FALSE}.
+#'
+#' 
+#' @param b0 The prior mean of \eqn{\beta}. This must be a scalar. The default value is 0.
+#' @param B0 The prior variance of \eqn{\beta}. This must be a scalar.  The default value is 1.
+#' @param c0 = 0.1
+#' @param d0 = 0.1
+#' 
+#' @param u0 \eqn{u_0/2} is the shape parameter for the inverse
+#' Gamma prior on variance parameters for U. The default is 10.
+
+#' @param u1 \eqn{u_1/2} is the scale parameter for the
+#' inverse Gamma prior on variance parameters for U.
+#' The default is 1.
+#'
+#' 
+#' @param v0 \eqn{v_0/2} is the shape parameter for the inverse
+#' Gamma prior on variance parameters for V.
+#' The default is 10.
+#' 
+#' @param v1 \eqn{v_1/2} is the scale parameter for the
+#' inverse Gamma prior on variance parameters for V.
+#' The default is the time length of Y.
+#' 
+
+#' @param marginal If \code{marginal = TRUE}, the log marignal likelihood is computed using the method of Chib (1995).
+    
+#' @param DIC If \code{DIC = TRUE}, the deviation information criterion is computed.
+    
+#' @param Waic If \code{Waic = TRUE}, the Watanabe information criterion is computed.
+#'
+#' @return An mcmc object that contains the posterior sample. This object can
+#' be summarized by functions provided by the coda package.  The object
+#' contains an attribute \code{Waic.out} that contains results of WAIC and the log-marginal
+#' likelihood of the model (\code{logmarglike}).
+#'
+#' @seealso \code{\link{NetworkChange}}
+#'
+#' @references  Jong Hee Park and Yunkyun Sohn. 2017. "Detecting Structural Change
+#' in Network Time Series Data using Bayesian Inference." Working Paper.
+#'
+#' Peter D. Hoff 2011. "Hierarchical Multilinear Models for Multiway Data."
+#' \emph{Computational Statistics \& Data Analysis}. 55: 530-543.
+#'
+#' Sumio Watanabe. 2010. "Asymptotic equivalence of Bayes cross validation and widely
+#' applicable information criterion in singular learning theory."
+#' \emph{Journal of Machine Learning Research}. 11: 3571-3594.
+
+#' Siddhartha Chib. 1995. ``Marginal Likelihood from the Gibbs Output.''
+#' \emph{Journal of the American Statistical Association}. 90: 1313-1321.
+
+#' @export
+#' @examples
+#'
+#'    \dontrun{
+#'    set.seed(1973)
+#'
+#'    ## generate an array with two constant blocks
+#'    Y <- MakeBlockNetworkChange(n=10, shape=10, T=40, type ="constant")
+#'    out0 <- NetworkStatic(Y, R=2, mcmc=10, burnin=10,
+#'    verbose=10, UL.Normal = "Orthonormal")
+#'
+#'    ## contour plot of latent node positions
+#'    plotContour(out0)
+#'
+#'    ## plot latent node positions
+#'    plotU(out0)
+#'
+#'    ## plot layer-specific network connection rules
+#'    plotV(out0)
+#'    }
+#'
 NetworkStatic <- function(Y, R=2, mcmc = 100, burnin = 100, verbose = 0,thin = 1, 
                           degree.normal="eigen", UL.Normal = "Orthonormal",
                           plotUU = FALSE, plotZ = FALSE,

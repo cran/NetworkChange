@@ -1,5 +1,24 @@
-updateU <-
-function(K, U, V, R, Zb, s2, eU, iVU){
+#' Update time-constant latent node positions
+#'
+#' Update time-constant latent node positions
+#'
+#' 
+#'
+#' @param K The dimensionality of Z
+#' @param U The most recent draw of latent node positions
+#' @param V Layer-specific network generation rule
+#' @param R The dimensionality of latent space
+#' @param Zb Z - beta
+#' @param s2 error variance
+#' @param eU The mean of U
+#' @param iVU The variance of U
+#'
+#' @return A matrix of time-constant latent node positions
+#'
+#' @export
+#'
+
+updateU <- function(K, U, V, R, Zb, s2, eU, iVU){
     for(i in sample(K[1])){
         Ui <- U ; Ui[i,] <- 0
         ## aperm(N*M*T, c(3,2,1)) generates a T*M*N array. 
