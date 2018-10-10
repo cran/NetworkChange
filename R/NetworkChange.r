@@ -13,6 +13,8 @@
 #' @param burnin The number of burn-in iterations for the sampler.
 #'
 #' @param mcmc The number of MCMC iterations after burnin.
+#' @param reduce.mcmc The number of reduced MCMC iterations for marginal likelihood computations.
+#' If \code{reduce.mcmc = NULL}, \code{mcmc/thin} is used.            
 #'
 #' @param thin The thinning interval used in the simulation.  The number of
 #' MCMC iterations must be divisible by this value.
@@ -42,6 +44,8 @@
 #' printed to the screen with the sampled mean values at every \code{verbose}th iteration.
 #' The default is \code{plotUU = FALSE}.
 #'
+#' @param constant If \code{constant = TRUE}, constant parameter is sampled
+#' and saved in the output as attribute \code{bmat}. Default is \code{constant = FALSE}.
 #' 
 #' @param b0 The prior mean of \eqn{\beta}. This must be a scalar. The default value is 0.
 #' @param B0 The prior variance of \eqn{\beta}. This must be a scalar.  The default value is 1.
@@ -102,7 +106,9 @@
 
 #' Siddhartha Chib. 1995. ``Marginal Likelihood from the Gibbs Output.''
 #' \emph{Journal of the American Statistical Association}. 90: 1313-1321.
-
+#'
+#' @importFrom abind abind
+#' 
 #' @export
 #'
 #' @examples
@@ -112,33 +118,37 @@
 #'    ## Generate an array (30 by 30 by 40) with block transitions
 #'    from 2 blocks to 3 blocks
 #'    Y <- MakeBlockNetworkChange(n=10, T=40, type ="split")
-#'    G <- 100 ## only 100 mcmc scans to save time
-#'    ## Fit models
+#'    G <- 100 ## Small mcmc scans to save time
+#' 
+#'    ## Fit multiple models for break number detection using Bayesian model comparison
 #'    out0 <- NetworkStatic(Y, R=2, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
 #'    out1 <- NetworkChange(Y, R=2, m=1, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
 #'    out2 <- NetworkChange(Y, R=2, m=2, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
 #'    out3 <- NetworkChange(Y, R=2, m=3, mcmc=G, burnin=G, verbose=G, Waic=TRUE)
 #'    outlist <- list(out0, out1, out2, out3)
-#'    ## The true model is out1
+#'
+#'    ## The most probable model given break number 0 to 3 and data is out1 according to WAIC 
 #'    WaicCompare(outlist)
+#'
 #'    ## plot latent node positions
 #'    plotU(out1)
+#'  
 #'    ## plot layer-specific network generation rules
 #'    plotV(out1)
 #'    }
 
 ##################################################################################
 NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,  
-                          mcmc=100, burnin=100, verbose=0, thin  = 1,                         
+                          mcmc=100, burnin=100, verbose=0, thin  = 1, reduce.mcmc = NULL,                         
                           degree.normal="eigen", 
                           UL.Normal = "Orthonormal",
                           DIC = FALSE, Waic=FALSE, marginal = FALSE, 
-                          plotUU = FALSE, plotZ = FALSE,
+                          plotUU = FALSE, plotZ = FALSE, constant = FALSE,
                           b0 = 0, B0 = 1, c0 = NULL, d0 = NULL,
                           u0 = NULL, u1 = NULL, v0 = NULL, v1 = NULL,
                           a = NULL, b = NULL){
 ##################################################################################
-    
+   
     ## function call
     ptm <- proc.time()
     call <- match.call()
@@ -154,7 +164,13 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     
     totiter <- mcmc + burnin
     nstore <- mcmc/thin    
-    reduce.mcmc <- nstore
+    if(R==1 & UL.Normal == "Orthonormal"|| R==1 & UL.Normal == "Normal"){
+        stop("If R=1, please set UL.Normal=FALSE.")
+    }
+    if(is.null(reduce.mcmc)){
+        reduce.mcmc = mcmc/thin
+    }
+
     
     ## changepoint priors and inputs
     ns <- m + 1 # number of states
@@ -217,12 +233,17 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     
     
     ## initialize beta
-    bhat <- mean(c(Z))
+    if(constant){
+        bhat <- mean(c(Z))
+        Zb <- Z - bhat
+    }else{
+        bhat = 0
+        Zb <- Z
+    }
     X <- array(1, dim=c(K, 1))
     p <- dim(X)[4]
     XtX <- prod(K) ## matrix(sum(X^2), p, p)
     rm(X)
-    Zb <- Z - bhat
     
     
     ## eigen decomposition
@@ -261,7 +282,6 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         MU[[j]] <-  M.U(list(U[[j]],U[[j]], Vm[[j]]))
         MU.state[[j]] <-  M.U(list(U[[j]],U[[j]],V))
     }
-    
     ## initialize s2 and d0
     if (is.null(c0)){
         c0 <- 1
@@ -290,7 +310,9 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         iVV[[j]] <- diag(R)
         eV[[j]] <- rep(v0, R)
     }
-    bhat.mat <- rep(NA, nstore)
+    if(constant){
+        bhat.mat <- rep(NA, nstore)
+    }
     Vmat <- matrix(NA, nstore, R*K[3])
     Smat <- matrix(NA, nstore, K[3])
     
@@ -310,11 +332,11 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     
     if(verbose !=0){
         cat("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n")
-        cat("\t NetworkChange Sampler Starts! \n")
+        cat("    NetworkChange Sampler Starts! \n")
         ## cat("\t function called: ")
         ## print(call)
-        cat("\t degree normalization: ", degree.normal, "\n")
-        cat("\t initial states: ", table(s), "\n")
+        cat("    degree normalization: ", degree.normal, "\n")
+        cat("    initial states: ", table(s), "\n")
         cat("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n")
     }
     
@@ -385,6 +407,7 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             MU.state[[j]] <- M.U(list(U[[j]],U[[j]],V))
             ZU[[j]] <- ZY[[j]] - MU[[j]]
         }
+        
         ## Step 4. update s2
         ## cat("\n---------------------------------------------- \n ")
         ## cat("Step 4. update s2 \n")
@@ -392,9 +415,11 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         s2 <- updates2m(ns, Zm, MU, c0, d0, Km)
        
         ## update constant bhat
-        bhat <- updatebm(ns, K, s, s2, B0, p, ZU)
-        Zb <- Z - bhat
-      
+        if(constant){
+            bhat <- updatebm(ns, K, s, s2, B0, p, ZU)
+            Zb <- Z - bhat
+        }
+        
         ## update hierarchical parameters
         ## hierarchical parameters for U
         for(j in 1:ns){
@@ -450,7 +475,9 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             cat("\n----------------------------------------------",'\n')
             cat("    iteration = ", iter, '\n')
             ## cat("    SOS = ", SOS, '\n')
-            cat("    beta = ", bhat,'\n')
+            if(constant){
+                cat("    beta = ", bhat,'\n')
+            }
             if(plotZ == TRUE & plotUU == TRUE){
                 if(ns < 4){
                     par(mfrow=c(1, ns+1))
@@ -494,7 +521,7 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
                 iVVmat[[j]][(iter-burnin)/thin, ] <- as.vector(iVV[[j]])
             }
             Vmat[(iter-burnin)/thin, ] <- as.vector(V)
-            bhat.mat[(iter-burnin)/thin] <- bhat
+            if(constant){ bhat.mat[(iter-burnin)/thin] <- bhat}
             Smat[(iter-burnin)/thin, ] <- s
             Pmat[(iter-burnin)/thin, ] <- diag(P)
             ps.store <- ps.store + ps
@@ -525,13 +552,22 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     s.st <- ceiling(apply(Smat, 2, median))
     ## MU.record.st <-  lapply(MU.record, function(x){x/nss})## MU.record[[j]]/nss      
     M.st <-  lapply(MU.record, function(x){x/nss})## MU.record[[j]]/nss      
-    bhat.st <- mean(bhat.mat) ## mean((trueY - M.st)^2 )
+    if(constant){
+        bhat.st <- mean(bhat.mat) ## mean((trueY - M.st)^2 )
+    }else{
+        bhat.st <- 0
+    }
+        
     P.st <- apply(Pmat, 2, mean)
     Km.st <- Km
     for(j in 1:ns){
         Km.st[[j]][3] <- sum(s.st == j)
     }
-    Zb.st <- Z - bhat.st
+    if(constant){
+        Zb.st <- Z - bhat.st
+    }else{
+        Zb.st <- Z
+    }
     
     ## regime specific stars
     U.st <- eU.st <- eV.st <- iVU.st <- iVV.st <- Vm.st <- 
@@ -644,8 +680,9 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     }
     
     ## cat("    loglike: ", as.numeric(loglike), "\n")
-    cat("    loglike: ", as.numeric(loglike.upper), "\n")
-    ## cat("    total SOS = ", SOS, '\n')
+    if(verbose !=0){
+        cat("    loglike : ", as.numeric(loglike.upper), "\n")
+    }
  
     
 ##########################################################################
@@ -706,11 +743,14 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             rm(Z.loglike.mat)
 
             ## cat("--------------------------------------------------------------------------------------------",'\n')
-            cat("    Waic: ", Waic.out[1], "\n")
-            ## cat("lpd: ", Waic.out[3], "\n")
-            ## cat("p_Waic: ", Waic.out[4], "\n")
-            cat("----------------------------------------------",'\n')
+            if(verbose !=0){
+                cat("    Waic: ", Waic.out[1], "\n")
+                ## cat("lpd: ", Waic.out[3], "\n")
+                ## cat("p_Waic: ", Waic.out[4], "\n")
+                cat("----------------------------------------------",'\n')
+            }
         }
+        
     }
     
 
@@ -732,12 +772,13 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         ##
         ## Marginal Step 1: p(eU.st|Z)
         ##
+        Zb <- Z
         density.eU.holder <- matrix(NA, reduce.mcmc)
         for (g in 1:reduce.mcmc){
             density.eU.temp.holder <- rep(NA, ns)
             for(j in 1:ns){
                 ej[[j]]  <-  as.numeric(Smat[g,]==j)
-                Zb <- Z - bhat.mat[g]               
+                if(constant){ Zb <- Z - bhat.mat[g]}               
                 if(is.na(Km[[j]][3])|Km[[j]][3] == 1){
                     Km[[j]] <- c(dim(Zb[,,ej[[j]]==1]), 1)
                     ## ZY[[j]] <- array(Z[,,ej[[j]]==1], dim = c(Km[[j]][1], Km[[j]][2], 1))
@@ -776,10 +817,10 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
         }
         
-        cat("\n---------------------------------------------- \n ")
-        cat("Marignal Likelihood Computation Step 1 \n")
-        cat("    density.eU: ", as.numeric(density.eU), "\n")
-        cat("---------------------------------------------- \n ")
+        ## cat("\n---------------------------------------------- \n ")
+        ## cat("Marignal Likelihood Computation Step 1 \n")
+        ## cat("    density.eU: ", as.numeric(density.eU), "\n")
+        ## cat("---------------------------------------------- \n ")
 
         ##
         ## Marginal Step 2: p(iVU.st|Z, eu.st)
@@ -822,10 +863,12 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             ## Step 4. update s2
             s2 <- updates2m(ns, Zm, MU, c0, d0, Km)
        
-            ## Step 5. update constant bhat
-            bhat <- updatebm(ns, K, s, s2, B0, p, ZU)
-            Zb <- Z - bhat
-      
+            if(constant){
+                ## Step 5. update constant bhat
+                bhat <- updatebm(ns, K, s, s2, B0, p, ZU)
+                Zb <- Z - bhat
+            }
+            
             ## update hierarchical parameters
             for(j in 1:ns){
                 dens.temp <- rep(NA, R)
@@ -874,7 +917,7 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         
         density.iVU <- log(mean(exp(density.iVU.holder)))
         if(abs(density.iVU) == Inf){
-            ## cat("    Precision reinforced! \n")
+            ## cat("    Precision enforced! \n")
             ## print(density.iVU.holder)
             density.iVU <- as.numeric(log(mean(exp(mpfr(density.iVU.holder, precBits=53)))))
         }
@@ -882,10 +925,10 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
         }
 
-        cat("\n---------------------------------------------- \n ")
-        cat("Marignal Likelihood Computation Step 2 \n")
-        cat("    density.iVU: ", as.numeric(density.iVU), "\n")
-        cat("---------------------------------------------- \n ")
+        ## cat("\n---------------------------------------------- \n ")
+        ## cat("Marignal Likelihood Computation Step 2 \n")
+        ## cat("    density.iVU: ", as.numeric(density.iVU), "\n")
+        ## cat("---------------------------------------------- \n ")
 
         ##
         ## Marginal Step 3: p(eV.st|Z, eu.st, iVU.st)
@@ -928,10 +971,12 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             ## Step 4. update s2
             s2 <- updates2m(ns, Zm, MU, c0, d0, Km)
        
-            ## Step 5. update constant bhat
-            bhat <- updatebm(ns, K, s, s2, B0, p, ZU)
-            Zb <- Z - bhat
-      
+            if(constant){
+                ## Step 5. update constant bhat
+                bhat <- updatebm(ns, K, s, s2, B0, p, ZU)
+                Zb <- Z - bhat
+            }
+            
             ## hierarchical parameters for V
             for(j in 1:ns){
                 Vs <- matrix(Vm[[j]], nrow=sum(ej[[j]]), ncol=R)
@@ -976,10 +1021,10 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         }
 
         
-        cat("\n---------------------------------------------- \n ")
-        cat("Marignal Likelihood Computation Step 3 \n")
-        cat("    density.eV: ", as.numeric(density.eV), "\n")
-        cat("---------------------------------------------- \n ")
+        ## cat("\n---------------------------------------------- \n ")
+        ## cat("Marignal Likelihood Computation Step 3 \n")
+        ## cat("    density.eV: ", as.numeric(density.eV), "\n")
+        ## cat("---------------------------------------------- \n ")
 
         ##
         ## Marginal Step 4: p(iVV.st|Z, eU.st, iVU.st, eV.st)
@@ -1022,10 +1067,12 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             ## Step 4. update s2
             s2 <- updates2m(ns, Zm, MU, c0, d0, Km)
        
-            ## Step 5. update constant bhat
-            bhat <- updatebm(ns, K, s, s2, B0, p, ZU)
-            Zb <- Z - bhat
-             
+            if(constant){
+                ## Step 5. update constant bhat
+                bhat <- updatebm(ns, K, s, s2, B0, p, ZU)
+                Zb <- Z - bhat
+            }
+            
             ## hierarchical parameters for V
             for(j in 1:ns){
                 dens.temp <- rep(NA, R)
@@ -1076,92 +1123,94 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
         }
 
 
-        cat("\n---------------------------------------------- \n ")
-        cat("Marignal Likelihood Computation Step 4 \n")
-        cat("    density.iVV: ", as.numeric(density.iVV), "\n")
-        cat("---------------------------------------------- \n ")
+        ## cat("\n---------------------------------------------- \n ")
+        ## cat("Marignal Likelihood Computation Step 4 \n")
+        ## cat("    density.iVV: ", as.numeric(density.iVV), "\n")
+        ## cat("---------------------------------------------- \n ")
 
-        ##
-        ## Marginal Step 5: p(bhat.st|Z, eu.st, iVU.st, eV.st, iVV.st)
-        ##
-        density.bhat.holder <- matrix(NA, reduce.mcmc)
-        for (g in 1:reduce.mcmc){
-            ## Step 1. update ej, Km, Zm
-            for (j in 1:ns){
-                ej[[j]] <- as.numeric(s==j)
-                Km[[j]] <- dim(Zb[,,ej[[j]]==1])
-                if(is.na(Km[[j]][3])){
-                    ZY[[j]] <- array(Z[,,ej[[j]]==1], dim = c(Km[[j]][1], Km[[j]][2], sum(ej[[j]]==1)))
-                    Zm[[j]] <- array(Zb[,,ej[[j]]==1], dim = c(Km[[j]][1], Km[[j]][2], sum(ej[[j]]==1)))
-                } else{
-                    ZY[[j]] <- Z[,,ej[[j]]==1]
-                    Zm[[j]] <- Zb[,,ej[[j]]==1]
+        if(constant){
+            ##
+            ## Marginal Step 5: p(bhat.st|Z, eu.st, iVU.st, eV.st, iVV.st)
+            ##
+            density.bhat.holder <- matrix(NA, reduce.mcmc)
+            for (g in 1:reduce.mcmc){
+                ## Step 1. update ej, Km, Zm
+                for (j in 1:ns){
+                    ej[[j]] <- as.numeric(s==j)
+                    Km[[j]] <- dim(Zb[,,ej[[j]]==1])
+                    if(is.na(Km[[j]][3])){
+                        ZY[[j]] <- array(Z[,,ej[[j]]==1], dim = c(Km[[j]][1], Km[[j]][2], sum(ej[[j]]==1)))
+                        Zm[[j]] <- array(Zb[,,ej[[j]]==1], dim = c(Km[[j]][1], Km[[j]][2], sum(ej[[j]]==1)))
+                    } else{
+                        ZY[[j]] <- Z[,,ej[[j]]==1]
+                        Zm[[j]] <- Zb[,,ej[[j]]==1]
+                    }
+                    Km[[j]] <- dim(Zm[[j]])
+                    
+                    ## UTA array: TRUE for upper triangle
+                    UTA[[j]] <- Zm[[j]]*NA
+                    for(k in 1:Km[[j]][3]) {
+                        UTA[[j]][,,k] <-  upper.tri(Zm[[j]][,,1])
+                    } 
+                    UTA[[j]] <- (UTA[[j]]==1)
                 }
-                Km[[j]] <- dim(Zm[[j]])
+                ## Step 2. update U
+                U <- updateUm(ns, U, V, R, Zm, Km, ej, s2, eU.st, iVU.st, UL.Normal)
                 
-                ## UTA array: TRUE for upper triangle
-                UTA[[j]] <- Zm[[j]]*NA
-                for(k in 1:Km[[j]][3]) {
-                    UTA[[j]][,,k] <-  upper.tri(Zm[[j]][,,1])
-                } 
-                UTA[[j]] <- (UTA[[j]]==1)
-            }
-            ## Step 2. update U
-            U <- updateUm(ns, U, V, R, Zm, Km, ej, s2, eU.st, iVU.st, UL.Normal)
-        
-            ## Step 3. update V
-            Vm <- updateVm(ns, U, V, Zm, Km, R, s2, eV.st, iVV.st, UTA)
-            V <- Reduce(rbind, Vm)
-
-            for(j in 1:ns){
-                MU[[j]] <- M.U(list(U[[j]],U[[j]],Vm[[j]]))
-                MU.state[[j]] <- M.U(list(U[[j]],U[[j]],V))
+                ## Step 3. update V
+                Vm <- updateVm(ns, U, V, Zm, Km, R, s2, eV.st, iVV.st, UTA)
+                V <- Reduce(rbind, Vm)
+                
+                for(j in 1:ns){
+                    MU[[j]] <- M.U(list(U[[j]],U[[j]],Vm[[j]]))
+                    MU.state[[j]] <- M.U(list(U[[j]],U[[j]],V))
                 ZU[[j]] <- ZY[[j]] - MU[[j]]
+                }
+                ## Step 4. update s2
+                s2 <- updates2m(ns, Zm, MU, c0, d0, Km)
+                
+                ## Step 5. update constant bhat
+                cV <- 1/(sum(sapply(1:ns, function(j){prod(K[1:2])*length(s == j)/s2[j]})) +  1/B0)
+                cE <- cV*sum(unlist(lapply(ZU, sum)))
+                bhat <- rnorm(1, cE, sqrt(cV)) 
+                Zb <- Z - bhat
+                density.bhat.holder[g] <- dnorm(bhat.st, cE, sqrt(cV), log=TRUE)
+                
+                ## Step 6. update s
+                state.out <- updateS(iter, s, V, m, Zb, Zt, Time, MU.state, P, s2,
+                                     N.upper.tri, random.perturb)
+                ## state.out <- updateS(iter, s, V, m, Zb, Zt, Time, fast,
+                ##              MU.state, P, s2, local.type, logistic.tune, N.upper.tri, sticky)
+                s <- state.out$s
+                ps <- state.out$ps
+                
+                ## double check 
+                if(length(table(s)) < ns){
+                    ## print(table(s))
+                    ## cat("Sampled s does not have all states. \n")
+                    s <- sort(sample(1:ns, size=K[3], replace=TRUE, prob=(rep(1, ns))))
+                }
+                ## Step 6. update P
+                P <- updateP(s, ns, P, A0)
             }
-            ## Step 4. update s2
-            s2 <- updates2m(ns, Zm, MU, c0, d0, Km)
-       
-            ## Step 5. update constant bhat
-            cV <- 1/(sum(sapply(1:ns, function(j){prod(K[1:2])*length(s == j)/s2[j]})) +  1/B0)
-            cE <- cV*sum(unlist(lapply(ZU, sum)))
-            bhat <- rnorm(1, cE, sqrt(cV)) 
-            Zb <- Z - bhat
-            density.bhat.holder[g] <- dnorm(bhat.st, cE, sqrt(cV), log=TRUE)
-        
-            ## Step 6. update s
-            state.out <- updateS(iter, s, V, m, Zb, Zt, Time, MU.state, P, s2,
-                          N.upper.tri, random.perturb)
-            ## state.out <- updateS(iter, s, V, m, Zb, Zt, Time, fast,
-            ##              MU.state, P, s2, local.type, logistic.tune, N.upper.tri, sticky)
-            s <- state.out$s
-            ps <- state.out$ps
             
-            ## double check 
-            if(length(table(s)) < ns){
-                ## print(table(s))
-                ## cat("Sampled s does not have all states. \n")
-                s <- sort(sample(1:ns, size=K[3], replace=TRUE, prob=(rep(1, ns))))
+            density.bhat <- log(mean(exp(density.bhat.holder)))
+            if(abs(density.bhat) == Inf){
+                ## cat("    Precision reinforced! \n")
+                ## print(density.bhat.holder)
+                density.bhat <- as.numeric(log(mean(exp(mpfr(density.bhat.holder, precBits=53)))))
             }
-            ## Step 6. update P
-            P <- updateP(s, ns, P, A0)
+            if(abs(density.bhat) == Inf){
+                stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
+            }
+            
+            
+            ## cat("\n---------------------------------------------- \n ")
+            ## cat("Marignal Likelihood Computation Step 5 \n")
+            ## cat("    density.bhat: ", as.numeric(density.bhat), "\n")
+            ## cat("---------------------------------------------- \n ")
         }
         
-        density.bhat <- log(mean(exp(density.bhat.holder)))
-        if(abs(density.bhat) == Inf){
-            ## cat("    Precision reinforced! \n")
-            ## print(density.bhat.holder)
-            density.bhat <- as.numeric(log(mean(exp(mpfr(density.bhat.holder, precBits=53)))))
-        }
-        if(abs(density.bhat) == Inf){
-            stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
-        }
-
-        
-        cat("\n---------------------------------------------- \n ")
-        cat("Marignal Likelihood Computation Step 5 \n")
-        cat("    density.bhat: ", as.numeric(density.bhat), "\n")
-        cat("---------------------------------------------- \n ")
-
         ##
         ## Marginal Step 6: p(s2.st|Z, eu.st, iVU.st, eV.st, iVV.st, bhat.st)
         ##
@@ -1243,10 +1292,10 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
         }
         
-        cat("\n---------------------------------------------- \n ")
-        cat("Marignal Likelihood Computation Step 6 \n")
-        cat("    density.Sigma: ", as.numeric(density.Sigma), "\n")
-        cat("---------------------------------------------- \n ")
+        ## cat("\n---------------------------------------------- \n ")
+        ## cat("Marignal Likelihood Computation Step 6 \n")
+        ## cat("    density.Sigma: ", as.numeric(density.Sigma), "\n")
+        ## cat("---------------------------------------------- \n ")
 
         
         ##
@@ -1332,10 +1381,10 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
             stop("The density of a posterior ordinate reaches a computational limit and marginal likelihood computation is halted.\n")
         }
 
-        cat("\n---------------------------------------------- \n ")
-        cat("Marignal Likelihood Computation Step 7 \n")
-        cat("    density.P: ", as.numeric(density.P), "\n")
-        cat("---------------------------------------------- \n ")
+        ## cat("\n---------------------------------------------- \n ")
+        ## cat("Marignal Likelihood Computation Step 7 \n")
+        ## cat("    density.P: ", as.numeric(density.P), "\n")
+        ## cat("---------------------------------------------- \n ")
 
         ## Prior ordinate
         iVV0 <- iVU0 <- diag(R) ; eV0 <- eU0 <- rep(0,R) ## ; psi0 <- rep(1,R) ; Psi0 <- R+1
@@ -1364,34 +1413,44 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
                 density.P.prior[j] <- log(dbeta(P.st[j], a, b)) ## p = 1
             }
         }
-        density.beta.prior <- dnorm(bhat.st, b0, sqrt(B0), log=TRUE) ## p = 1
+        if(constant){
+            density.beta.prior <- dnorm(bhat.st, b0, sqrt(B0), log=TRUE) ## p = 1
+        }
         density.Sigma.prior <- sum(Sigma.prior)
 
         ## marginal prior density
-        logprior <- sum(density.eU.prior) + sum(density.eV.prior) + sum(density.iVU.prior) +
-            sum(density.iVV.prior) +
-            density.beta.prior + density.Sigma.prior + sum(density.P.prior)
-        logdenom <- (density.eU + density.eV + density.iVU + density.iVV +
+        if(constant){
+            logprior <- sum(density.eU.prior) + sum(density.eV.prior) + sum(density.iVU.prior) +
+                sum(density.iVV.prior) +
+                density.beta.prior + density.Sigma.prior + sum(density.P.prior)
+            logdenom <- (density.eU + density.eV + density.iVU + density.iVV +
                          density.bhat + density.Sigma + density.P)
+        } else{
+            logprior <- sum(density.eU.prior) + sum(density.eV.prior) + sum(density.iVU.prior) +
+                sum(density.iVV.prior) +
+                density.Sigma.prior + sum(density.P.prior)
+            logdenom <- (density.eU + density.eV + density.iVU + density.iVV +
+                         density.Sigma + density.P)
+        }
         ## logmarglike <- (loglike + logprior) - logdenom;
         logmarglike.upper <- (loglike.upper + logprior) - logdenom
         
-        cat("\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n")
+        ## cat("\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n")
         ## cat("    log marginal likelihood = (loglike + logprior) - (density.parameters) \n")
         ## cat("    log marginal likelihood : ", as.numeric(logmarglike), "\n")
-        cat("    log marginal likelihood : ", as.numeric(logmarglike.upper), "\n")
-        cat("    logprior : ", as.numeric(logprior), "\n")
-        cat("    log posterior density : ", as.numeric(logdenom), "\n")
-        cat("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n")
+        ## cat("    log marginal likelihood : ", as.numeric(logmarglike.upper), "\n")
+        ## cat("    log prior : ", as.numeric(logprior), "\n")
+        ## cat("    log posterior density : ", as.numeric(logdenom), "\n")
+        ## cat("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@ \n")
                 
     }
     #########################################################################
     ## flip V and U based on the size of mse(V)
     ## so that the first principal axis comes at the first column of V and U
     ## In that way, the interpretation of cp results makes sense.
-    #########################################################################
+#########################################################################
     
-    output <- lapply(MU.record, function(x){x/nss}) ## MU.record/nss
+    output <- abind(MU.st) ## lapply(MU.record, function(x){x/nss}) ## MU.record/nss
     names(output) <- "MU"
     attr(output, "title") <- "NetworkChange Posterior Sample"
     attr(output, "Z") <- Z
@@ -1402,7 +1461,7 @@ NetworkChange <- function(Y, R=2, m=1, initial.s = NULL,
     attr(output, "SOS") <- SOS
     attr(output, "Umat") <- Umat
     attr(output, "Vmat") <- Vmat
-    attr(output, "bmat") <- bhat.mat
+    if(constant){attr(output, "bmat") <- bhat.mat}
     attr(output, "s2mat") <- s2mat
     attr(output, "Smat") <- Smat ## state output
     attr(output, "mcmc") <- nstore
