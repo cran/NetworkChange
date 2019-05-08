@@ -42,7 +42,10 @@
 #' duration is the sample period divided by the number of states.
 #'
 #' @importFrom tidyr gather
-#' 
+#'
+#' @references   Jong Hee Park and Yunkyun Sohn. 2019. "Detecting Structural Change
+#' in Longitudinal Network Data." \emph{Bayesian Analysis}. Forthcoming.
+
 #' @export
 #'
 #'
@@ -60,7 +63,9 @@
 #'
 #' }
 #'
-#' 
+#'
+#'
+
 BreakDiagnostic <- function(Y, R=2, mcmc=100, burnin=100, verbose=100, thin=1, UL.Normal = "Orthonormal",
                             v0=NULL, v1=NULL, break.upper = 3, a=1, b=1){
     ## set.seed(11173)
@@ -79,14 +84,14 @@ BreakDiagnostic <- function(Y, R=2, mcmc=100, burnin=100, verbose=100, thin=1, U
     ## model fit
     out <- as.list(rep(NA, break.upper))
     out[[1]] <- NetworkStatic(Y, R=2, mcmc=mcmc, reduce.mcmc = mcmc/2, 
-                              burnin=mcmc, verbose=mcmc, v0=v0, v1=v1,
+                              burnin=burnin, verbose=verbose, v0=v0, v1=v1,
                               Waic=TRUE, marginal=TRUE)
     for(m in 1:break.upper){
         ## to save time and to be more conservative, use randomly generated initial states
         initial.s <- sort(rep(1:(m+1), length=K[[3]]))
         out[[m+1]] <- NetworkChange(Y, R=2, m=m, mcmc=mcmc, initial.s = initial.s, reduce.mcmc = mcmc/2, 
-                                        burnin=mcmc, verbose=mcmc, thin=thin, v0=v0, v1=v1, a=a, b=a,
-                                        Waic=TRUE, marginal=TRUE)
+                                    burnin=burnin, verbose=verbose, thin=thin, v0=v0, v1=v1, a=a, b=a,
+                                    Waic=TRUE, marginal=TRUE)
     }
     
     ## diagnostic info
@@ -114,12 +119,14 @@ BreakDiagnostic <- function(Y, R=2, mcmc=100, burnin=100, verbose=100, thin=1, U
     test.curve <- rbind(test.curve1, test.curve2, test.curve3, test.curve4)
     test.curve <- data.frame(test.curve)
     colnames(test.curve) <- paste0("break", 0:break.upper)
-    Metric <- c("-2*LogMarginal", "-2*Loglike", "WAIC","Average Loss")
+    Metric <- c("-2*LogMarginal", "-2*Loglike", "WAIC", "Average Loss")
     test.curve$Metric <- Metric
     data_long <- tidyr::gather(test.curve, model, value, 
                                paste0("break", 0:break.upper), factor_key=TRUE)
     model <- value <- NULL
-    g1 <- ggplot(data= data_long, mapping = aes_string(x = model, y = value, group = Metric, color = Metric)) +
+    g1 <- ggplot(data= transform(data_long,
+                                 Metric=factor(Metric,levels=c("-2*LogMarginal", "-2*Loglike", "WAIC", "Average Loss"))),
+                 mapping = aes(x = model, y = value, group = Metric, color = Metric)) +
         geom_line(size=0.2) + geom_point(cex=3, alpha=1/2) + facet_wrap(~Metric, nrow=1, ncol=4, scales = "free_y") + 
         labs(x = "Model", y = "Value") + theme_bw() +
         theme(legend.position="none",

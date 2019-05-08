@@ -76,6 +76,10 @@ findBreakPoint <- function (mcmcout, start = 1)
 #'   \code{logmarglike} the natural log of the marginal likelihood for each model; \code{State} sampled state vectors;
 #'   \code{Tau} expected break points for each model; and \code{Tau.samp} sampled break points from hidden state draws.
 #'
+#'
+#' @references   Jong Hee Park and Yunkyun Sohn. 2019. "Detecting Structural Change
+#' in Longitudinal Network Data." \emph{Bayesian Analysis}. Forthcoming.
+#'
 #' @export
 #'
 #'

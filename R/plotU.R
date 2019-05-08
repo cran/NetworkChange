@@ -23,7 +23,7 @@
 #'    }
 
 
-plotU <- function(OUT, Year=NULL, names=NULL, main=""){
+plotU <- function(OUT, Year=NULL, names=NULL, main=NULL){
     m <- attr(OUT, "m")
     mcmc <- attr(OUT, "mcmc")
     Z <- attr(OUT, "Z")
@@ -48,7 +48,11 @@ plotU <- function(OUT, Year=NULL, names=NULL, main=""){
         df <- data.frame(First = U[,1], Second = U[,2],
                          Size = sqrt((U[,1])^2 + (U[,2])^2),
                          Names = names)
-        title <- paste0("Latent Space of No Break Model")
+        if(is.null(main)){
+            title <- paste0("Latent Space of No Break Model")
+        }else{
+            title <- main
+        }
         ggplot(df, aes(x=First, y = Second, label=Names)) + geom_point(size = df$Size+1, colour = alpha("red", 1/5)) +
             ggtitle(title) + geom_text(size = df$Size, colour = "navy") + 
                 theme(plot.title = element_text(lineheight=.8, face="bold"))
@@ -69,7 +73,12 @@ plotU <- function(OUT, Year=NULL, names=NULL, main=""){
             df.list[[i]] <- data.frame(First = U.list[[i]][,1], Second = U.list[[i]][,2],
                                        Size = sqrt((U.list[[i]][,1])^2 + (U.list[[i]][,2])^2),
                                        Names = names)
-            title.list[[i]] <- paste0("Latent Space of Break ", i, " (", time.period[[i]], ")")
+            if(is.null(main)){
+                title <- paste0("Latent Space of Break ", i, " (", time.period[[i]], ")")
+            }else{
+                title.list[[i]] <- main
+            }
+            ## title.list[[i]] <- paste0("Latent Space of Break ", i, " (", time.period[[i]], ")")
             p.list[[i]] <- ggplot(df.list[[i]], aes(x=First, y = Second, label=Names)) +
                 geom_point(size = df.list[[i]]$Size+1, colour = alpha("red", 1/5)) +
                     ggtitle(title.list[[i]]) +

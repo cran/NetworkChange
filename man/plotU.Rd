@@ -4,7 +4,7 @@
 \alias{plotU}
 \title{Plot of latent node positions}
 \usage{
-plotU(OUT, Year = NULL, names = NULL, main = "")
+plotU(OUT, Year = NULL, names = NULL, main = NULL)
 }
 \arguments{
 \item{OUT}{Output of networkchange objects.}
