@@ -9,7 +9,7 @@
 #' @param segment.size segment size.  Default is 0.1.
 #' @param n.cluster number of cluster. Default is 3. 
 #'
-#' @references   Jong Hee Park and Yunkyun Sohn. 2019. "Detecting Structural Change
+#' @references   Jong Hee Park and Yunkyun Sohn. 2020. "Detecting Structural Change
 #' in Longitudinal Network Data." \emph{Bayesian Analysis}. Forthcoming.
 #' 
 #' @return A plot object

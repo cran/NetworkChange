@@ -14,15 +14,15 @@ compared.}
 
 \item{waic}{If \code{waic} is TRUE, \code{waic}(Watanabe information criterion) will be reported.}
 
-\item{display}{If \code{display} is TRUE, a plot of \code{ave.loss} will be produced. 
+\item{display}{If \code{display} is TRUE, a plot of \code{ave.loss} will be produced.
 
 \code{BreakPointLoss}. ave.loss, logmarglike, State, Tau, Tau.samp}
 }
 \value{
 \code{BreakPointLoss} returns five objects. They are: \code{ave.loss} the expected loss for each model
-  computed by the mean sqaured distance of hidden state changes from the expected break points.  
-  \code{logmarglike} the natural log of the marginal likelihood for each model; \code{State} sampled state vectors;
-  \code{Tau} expected break points for each model; and \code{Tau.samp} sampled break points from hidden state draws.
+computed by the mean sqaured distance of hidden state changes from the expected break points.
+\code{logmarglike} the natural log of the marginal likelihood for each model; \code{State} sampled state vectors;
+\code{Tau} expected break points for each model; and \code{Tau.samp} sampled break points from hidden state draws.
 }
 \description{
 Compute the Average Loss of Hidden State Changes from Expected Break Points

@@ -69,6 +69,6 @@ Detect a break number using different metrics
 
 }
 \references{
-Jong Hee Park and Yunkyun Sohn. 2019. "Detecting Structural Change
+Jong Hee Park and Yunkyun Sohn. 2020. "Detecting Structural Change
 in Longitudinal Network Data." \emph{Bayesian Analysis}. Forthcoming.
 }

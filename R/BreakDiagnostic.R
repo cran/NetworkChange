@@ -43,7 +43,7 @@
 #'
 #' @importFrom tidyr gather
 #'
-#' @references   Jong Hee Park and Yunkyun Sohn. 2019. "Detecting Structural Change
+#' @references   Jong Hee Park and Yunkyun Sohn. 2020. "Detecting Structural Change
 #' in Longitudinal Network Data." \emph{Bayesian Analysis}. Forthcoming.
 
 #' @export
